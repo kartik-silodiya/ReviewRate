@@ -216,42 +216,26 @@ export const CompanyDetailPage = () => {
   // --- Main Page Render ---
   return (
     <div className="bg-gray-50 min-h-screen p-4 md:p-8">
-
-      <header className="w-full bg-white shadow-md px-6 md:px-16 py-4 flex flex-col md:flex-row items-center justify-between gap-3 sticky top-0 z-50">
-        {/* --- Left Logo --- */}
-        <Link to="/" className="flex items-center gap-2">
-          <img src="/frame-1.svg" alt="Logo" className="w-10 h-10" />
-          <h1 className="text-xl font-semibold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-            Reviewify
-          </h1>
-        </Link>
-
-        {/* --- Center Search Bar --- */}
-        <div className="relative w-full md:max-w-md">
+      <header className="w-full bg-white shadow-[0px_2px_25px_#0000001a] px-20 py-4 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <img className="w-10 h-10" alt="Frame" src="/frame-1.svg" />
+        </div>
+        <div className="flex-1 max-w-96 mx-auto relative">
           <Input
             type="text"
-            placeholder="Search for a company..."
-            className="w-full h-[42px] bg-gray-50 rounded-full border border-gray-300 pl-4 pr-11 text-sm text-gray-700 focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all"
+            placeholder="Search..."
+            className="w-full h-[37px] bg-white rounded-[5px] border border-solid border-[#cdcdcd] pl-3 pr-10 [font-family:'Poppins',Helvetica] font-normal text-[#777777] text-[15px]"
           />
-          <SearchIcon className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+          <SearchIcon className="absolute right-3 top-1/2 -translate-y-1/2 w-[22px] h-[22px] text-gray-400" />
         </div>
-
-        {/* --- Right Auth Buttons --- */}
-        <div className="flex items-center gap-3 md:gap-5">
-          <Link to="/signup">
-            <Button
-              variant="outline"
-              className="border-gray-300 hover:bg-gray-100 text-gray-700 text-sm font-medium rounded-full px-5"
-            >
-              Sign Up
-            </Button>
-          </Link>
-          <Link to="/login">
-            <Button className="bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:from-purple-700 hover:to-blue-700 text-sm font-medium rounded-full px-5">
-              Login
-            </Button>
-          </Link>
-        </div>
+        <nav className="flex items-center gap-[109px]">
+          <button className="[font-family:'Poppins',Helvetica] font-normal text-black text-[17px] tracking-[0] leading-[normal]">
+            SignUp
+          </button>
+          <button className="[font-family:'Poppins',Helvetica] font-normal text-black text-[17px] tracking-[0] leading-[normal]">
+            Login
+          </button>
+        </nav>
       </header>
 
       <div className="max-w-4xl mx-auto mb-4">
