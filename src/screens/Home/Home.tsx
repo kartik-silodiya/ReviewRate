@@ -289,6 +289,10 @@ export const Home = (): JSX.Element => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="name">Name</SelectItem>
+                <SelectItem value="average">Average</SelectItem>
+                <SelectItem value="rating">Rating</SelectItem>
+                <SelectItem value="location">Location</SelectItem>
+
               </SelectContent>
             </Select>
           </div>
