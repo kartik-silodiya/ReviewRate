@@ -1,13 +1,14 @@
+// CompanyDetailPage.tsx
+
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import {
   getCompanyById,
   getReviewsForCompany,
   getAverageRating,
-  addReview, // We need this new API function
+  addReview,
   likeReview,
 } from '../../lib/api'; // Adjust path if needed
-
 
 // --- Import Icons ---
 import {
@@ -17,8 +18,8 @@ import {
   StarHalfIcon,
   UserCircleIcon,
   SearchIcon,
-  ThumbsUpIcon, // <-- ADD THIS
-  Share2Icon,   // <-- ADD THIS
+  ThumbsUpIcon,
+  Share2Icon,
 } from 'lucide-react';
 
 // --- Import UI Components ---
@@ -34,6 +35,15 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 
+// --- NEW: Import Select components ---
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+// --- END NEW ---
 
 // --- Define Types ---
 type Company = {
@@ -43,11 +53,9 @@ type Company = {
   city: string;
   founded_on: string;
   description: string;
-  likes?: number;          // NEW
+  likes?: number;
   likedByUser?: boolean;
-  // ... any other company fields
 };
-
 
 type Review = {
   id: number;
@@ -56,16 +64,14 @@ type Review = {
   review_text: string;
   rating: number;
   created_at: string;
-  likes_count?: number; // <-- ADD THIS
+  likes_count?: number;
 };
-
 
 // --- Helper Component for Star Rating Display ---
 const StarRatingDisplay = ({ rating, reviewCount }: { rating: number, reviewCount?: number }) => {
   const fullStars = Math.floor(rating);
   const hasHalfStar = rating % 1 >= 0.4; // Check for half star
   const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
-
 
   return (
     <div className="flex items-center gap-1">
@@ -85,7 +91,6 @@ const StarRatingDisplay = ({ rating, reviewCount }: { rating: number, reviewCoun
   );
 };
 
-
 // --- Helper Component for Star Rating Input ---
 const StarRatingInput = ({ rating, setRating }: { rating: number, setRating: (rating: number) => void }) => {
   return (
@@ -94,41 +99,40 @@ const StarRatingInput = ({ rating, setRating }: { rating: number, setRating: (ra
         <StarIcon
           key={star}
           className={`w-7 h-7 cursor-pointer ${star <= rating
-            ? 'text-yellow-400 fill-yellow-400'
-            : 'text-gray-300 hover:text-gray-400'
+              ? 'text-yellow-400 fill-yellow-400'
+              : 'text-gray-300 hover:text-gray-400'
             }`}
           onClick={() => setRating(star)}
-          onMouseEnter={() => { /* can add hover effect here */ }}
-          onMouseLeave={() => { /* can remove hover effect here */ }}
         />
       ))}
     </div>
   );
 };
 
-
 export const CompanyDetailPage = () => {
   const { id } = useParams<{ id: string }>();
 
-
   // --- State for Data ---
   const [company, setCompany] = useState<Company | null>(null);
-  const [reviews, setReviews] = useState<Review[]>([]);
+  const [reviews, setReviews] = useState<Review[]>([]); // The raw list from API
   const [averageRating, setAverageRating] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-
   // --- State for "Add Review" Modal ---
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [newReviewName, setNewReviewName] = useState(""); // Added Name
+  const [newReviewName, setNewReviewName] = useState("");
   const [newReviewSubject, setNewReviewSubject] = useState("");
   const [newReviewText, setNewReviewText] = useState("");
   const [newReviewRating, setNewReviewRating] = useState(0);
 
   const [likedReviews, setLikedReviews] = useState<Set<number>>(new Set());
 
+  // --- NEW: State for sorting ---
+  const [sortBy, setSortBy] = useState('date'); // 'date', 'rating_desc', 'rating_asc', 'likes'
+  const [sortedReviews, setSortedReviews] = useState<Review[]>([]); // The list to be rendered
+  // --- END NEW ---
 
   // --- Data Loading Effect ---
   useEffect(() => {
@@ -138,12 +142,10 @@ export const CompanyDetailPage = () => {
       return;
     }
 
-
     const loadCompanyData = async () => {
       try {
         setLoading(true);
         setError(null);
-
 
         const [companyData, reviewsData, avgRatingData] = await Promise.all([
           getCompanyById(id),
@@ -151,11 +153,9 @@ export const CompanyDetailPage = () => {
           getAverageRating(id),
         ]);
 
-
         setCompany(companyData);
-        setReviews(reviewsData || []);
+        setReviews(reviewsData || []); // <-- Set the raw review list
         setAverageRating(avgRatingData);
-
 
       } catch (err: any) {
         setError(err.message);
@@ -164,9 +164,34 @@ export const CompanyDetailPage = () => {
       }
     };
 
-
     loadCompanyData();
   }, [id]);
+
+  // --- NEW: Effect for Sorting Reviews ---
+  useEffect(() => {
+    const sortReviews = () => {
+      const reviewsCopy = [...reviews]; // Create a copy to sort
+      
+      reviewsCopy.sort((a, b) => {
+        switch (sortBy) {
+          case 'rating_desc':
+            return b.rating - a.rating;
+          case 'rating_asc':
+            return a.rating - b.rating;
+          case 'likes':
+            return (b.likes_count ?? 0) - (a.likes_count ?? 0);
+          case 'date':
+          default:
+            // Newest first
+            return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        }
+      });
+      setSortedReviews(reviewsCopy); // <-- Set the new sorted list
+    };
+
+    sortReviews();
+  }, [reviews, sortBy]); // Re-run when the source list or sort criteria changes
+  // --- END NEW ---
 
 
   // --- Function to Handle Review Submission ---
@@ -175,7 +200,6 @@ export const CompanyDetailPage = () => {
       alert("Please fill out all fields and select a rating.");
       return;
     }
-
 
     setIsSubmitting(true);
     try {
@@ -186,27 +210,20 @@ export const CompanyDetailPage = () => {
         rating: newReviewRating,
       };
 
-
-      // 1. Add the new review
       await addReview(reviewData, id);
 
-
-      // 2. Refresh all data to show the new review and rating
       const [reviewsData, avgRatingData] = await Promise.all([
         getReviewsForCompany(id),
         getAverageRating(id),
       ]);
-      setReviews(reviewsData || []);
+      setReviews(reviewsData || []); // <-- Update the raw list
       setAverageRating(avgRatingData);
 
-
-      // 3. Reset form and close modal
       setIsModalOpen(false);
       setNewReviewName("");
       setNewReviewSubject("");
       setNewReviewText("");
       setNewReviewRating(0);
-
 
     } catch (err: any) {
       setError("Failed to submit review: " + err.message);
@@ -215,55 +232,46 @@ export const CompanyDetailPage = () => {
     }
   };
 
-  // --- NEW: Function to Handle Liking a Review ---
+  // --- Function to Handle Liking a Review ---
   const handleLikeReview = async (reviewId: number) => {
-    // Prevent double-liking in the same session
     if (likedReviews.has(reviewId)) return;
 
-
-    // 1. Optimistic UI Update (update state immediately)
     setLikedReviews(prev => new Set(prev).add(reviewId));
-    setReviews(prevReviews =>
-      prevReviews.map(r =>
-        r.id === reviewId ? { ...r, likes_count: (r.likes_count || 0) + 1 } : r
-      )
+    
+    // Update the raw list
+    const newReviews = reviews.map(r =>
+      r.id === reviewId ? { ...r, likes_count: (r.likes_count || 0) + 1 } : r
     );
+    setReviews(newReviews); // This will trigger the sorting useEffect
 
-
-    // 2. API Call (You need to create this API function)
     try {
-      await likeReview(reviewId); // <-- See backend notes below
-      console.log(`API call to like review ${reviewId} would go here.`);
+      await likeReview(reviewId);
     } catch (err) {
       console.error("Failed to like review:", err);
-      // 3. Rollback on failure
+      // Rollback on failure
       setLikedReviews(prev => {
         const newSet = new Set(prev);
         newSet.delete(reviewId);
         return newSet;
       });
-      setReviews(prevReviews =>
-        prevReviews.map(r =>
-          r.id === reviewId ? { ...r, likes_count: (r.likes_count || 0) - 1 } : r
-        )
+       const rolledBackReviews = reviews.map(r =>
+        r.id === reviewId ? { ...r, likes_count: (r.likes_count || 0) - 1 } : r
       );
+      setReviews(rolledBackReviews); // This will also trigger the sorting useEffect
     }
   };
 
 
-  // --- NEW: Function to Handle Sharing a Review ---
+  // --- Function to Handle Sharing a Review ---
   const handleShareReview = async (review: Review) => {
     if (!company) return;
-
 
     const shareData = {
       title: `Review for ${company.name} by ${review.full_name}`,
       text: `"${review.subject}: ${review.review_text}"`,
-      url: window.location.href, // Links to the current company page
+      url: window.location.href,
     };
 
-
-    // Use the Web Share API if available
     if (navigator.share) {
       try {
         await navigator.share(shareData);
@@ -271,12 +279,10 @@ export const CompanyDetailPage = () => {
         console.error('Error sharing:', err);
       }
     } else {
-      // Fallback for desktop or unsupported browsers
       navigator.clipboard.writeText(shareData.url);
       alert("Share not supported on this browser. Link copied to clipboard!");
     }
   };
-
 
   // --- Render Logic ---
   if (loading) {
@@ -286,7 +292,6 @@ export const CompanyDetailPage = () => {
       </div>
     );
   }
-
 
   if (error) {
     return (
@@ -299,7 +304,6 @@ export const CompanyDetailPage = () => {
     );
   }
 
-
   if (!company) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-8">
@@ -311,10 +315,10 @@ export const CompanyDetailPage = () => {
     );
   }
 
-
   // --- Main Page Render ---
   return (
     <div className="bg-gray-50 min-h-screen p-4 md:p-8">
+      {/* ... (Header and Back to Home link remain the same) ... */}
       <header className="w-full bg-white shadow-[0px_2px_25px_#0000001a] px-20 py-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <img className="w-10 h-10" alt="Frame" src="/frame-1.svg" />
@@ -338,18 +342,15 @@ export const CompanyDetailPage = () => {
         </nav>
       </header>
 
-
-      <div className="max-w-4xl mx-auto mb-4">
+      <div className="max-w-4xl mx-auto my-4">
         <Link to="/" className="text-blue-600 hover:underline">
           &larr; Back to Home
         </Link>
       </div>
 
-
       {/* Main Content Card */}
       <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-lg overflow-hidden">
         <div className="p-6 md:p-8">
-
 
           {/* --- Company Header --- */}
           <div className="flex flex-col md:flex-row items-start gap-6">
@@ -381,7 +382,6 @@ export const CompanyDetailPage = () => {
                   />
                 </div>
 
-
                 {/* --- Add Review Button & Modal --- */}
                 <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
                   <DialogTrigger asChild>
@@ -395,7 +395,6 @@ export const CompanyDetailPage = () => {
                       <DialogTitle className="text-2xl text-center font-bold">Add Review</DialogTitle>
                     </DialogHeader>
 
-
                     <div className="mt-6 space-y-4">
                       <div className="space-y-2">
                         <Label htmlFor="name" className="text-sm font-medium">Full Name</Label>
@@ -407,8 +406,6 @@ export const CompanyDetailPage = () => {
                           className="w-full"
                         />
                       </div>
-
-
                       <div className="space-y-2">
                         <Label htmlFor="subject" className="text-sm font-medium">Subject</Label>
                         <Input
@@ -419,8 +416,6 @@ export const CompanyDetailPage = () => {
                           className="w-full"
                         />
                       </div>
-
-
                       <div className="space-y-2">
                         <Label htmlFor="review" className="text-sm font-medium">Enter your Review</Label>
                         <Textarea
@@ -431,8 +426,6 @@ export const CompanyDetailPage = () => {
                           className="w-full"
                         />
                       </div>
-
-
                       <div className="space-y-2">
                         <h3 className="text-lg font-semibold">Rating</h3>
                         <div className="flex items-center gap-4">
@@ -441,7 +434,6 @@ export const CompanyDetailPage = () => {
                         </div>
                       </div>
                     </div>
-
 
                     <div className="mt-8 flex justify-center">
                       <Button
@@ -456,21 +448,38 @@ export const CompanyDetailPage = () => {
                   </DialogContent>
                 </Dialog>
                 {/* --- End Modal --- */}
-
-
               </div>
             </div>
           </div>
 
-
           {/* --- Review List --- */}
           <div className="mt-8 pt-6 border-t">
-            <h2 className="text-xl font-semibold mb-4">
-              Result Found: {reviews.length}
-            </h2>
+            {/* --- NEW: Header with Sort Dropdown --- */}
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold">
+                Result Found: {reviews.length}
+              </h2>
+              <div className="flex items-center gap-2">
+                 <Label htmlFor="sort-reviews" className="text-sm font-medium text-gray-700">Sort by:</Label>
+                 <Select value={sortBy} onValueChange={setSortBy}>
+                   <SelectTrigger id="sort-reviews" className="w-[180px] bg-white">
+                     <SelectValue placeholder="Sort by" />
+                   </SelectTrigger>
+                   <SelectContent>
+                     <SelectItem value="date">Newest First</SelectItem>
+                     <SelectItem value="rating_desc">Rating: High to Low</SelectItem>
+                     <SelectItem value="rating_asc">Rating: Low to High</SelectItem>
+                     <SelectItem value="likes">Most Liked</SelectItem>
+                   </SelectContent>
+                 </Select>
+              </div>
+            </div>
+            {/* --- END NEW --- */}
+
             <div className="space-y-6">
+              {/* --- NEW: Map over sortedReviews --- */}
               {reviews.length > 0 ? (
-                reviews.map((review) => (
+                sortedReviews.map((review) => (
                   <div key={review.id} className="flex items-start gap-4">
                     <UserCircleIcon className="w-10 h-10 text-gray-400 flex-shrink-0" />
                     <div className="flex-1">
@@ -487,7 +496,7 @@ export const CompanyDetailPage = () => {
                       <p className="mt-1 text-gray-700">
                         {review.review_text}
                       </p>
-                      {/* --- NEW: ACTION BUTTONS --- */}
+                      {/* --- ACTION BUTTONS --- */}
                       <div className="flex items-center gap-4 mt-3">
                         <button
                           onClick={() => handleLikeReview(review.id)}
@@ -505,12 +514,11 @@ export const CompanyDetailPage = () => {
                         <button
                           onClick={() => handleShareReview(review)}
                           className="flex items-center gap-1.5 text-gray-500 hover:text-gray-900 transition-colors"
-                          >
+                        >
                           <Share2Icon className="w-4 h-4" />
                           <span className="text-sm font-medium">Share</span>
                         </button>
                       </div>
-                      {/* --- END: ACTION BUTTONS --- */}
                     </div>
                   </div>
                 ))
@@ -519,10 +527,9 @@ export const CompanyDetailPage = () => {
                   Be the first to leave a review!
                 </p>
               )}
+              {/* --- END NEW --- */}
             </div>
           </div>
-
-
         </div>
       </div>
     </div>
