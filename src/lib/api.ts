@@ -5,19 +5,19 @@
 // use: import { supabase } from '../supabaseClient';
 import { supabase } from '@/supabaseClient';
 
-// 1. FOR YOUR COMPANY LISTING PAGE
-export async function getCompanies(searchTerm: any) {
-  let query = supabase.from('companies').select('*');
+export async function getCompanies(searchTerm: any = "") {
+  let query = supabase.from("companies").select("*");
 
-  // If a search term is provided, use it
+  // Only filter if a term is given
   if (searchTerm) {
-    query = query.ilike('name', `%${searchTerm}%`); // Case-insensitive search
+    query = query.ilike("name", `%${searchTerm}%`);
   }
 
-  const { data, error } = await query.order('created_at', { ascending: false });
+  const { data, error } = await query.order("created_at", { ascending: false });
   if (error) throw error;
   return data;
 }
+
 
 // 2. FOR YOUR "ADD COMPANY" FORM
 export async function addCompany(companyData: any) {
@@ -81,3 +81,14 @@ export async function getCompanyById(companyId: string) {
   if (error) throw error;
   return data;
 }
+
+export const likeReview = async (reviewId: number) => {
+  const { error } = await supabase.rpc('increment_like', { 
+    review_id_to_inc: reviewId 
+  });
+
+  if (error) {
+    console.error('Error incrementing like:', error);
+    throw new Error(error.message);
+  }
+};

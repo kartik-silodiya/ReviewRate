@@ -1,7 +1,7 @@
-import { MapPinIcon, SearchIcon } from "lucide-react";
-import { useState, useEffect } from "react"; // No change here
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { MapPinIcon, SearchIcon } from "lucide-react"; // <-- FIX: 'from'
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button"; // <-- FIX: 'from'
+import { Input } from "@/components/ui/input"; // <-- FIX: 'from'
 import {
   Select,
   SelectContent,
@@ -9,132 +9,211 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-
-
 import { CompanyListSection } from "./sections/CompanyListSection";
-import { HeaderSection } from "./sections/HeaderSection";
-import { ResultCountSection } from "./sections/ResultCountSection";
-import { SearchAndFilterSection } from "./sections/SearchAndFilterSection";
-
-
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 
+// --- API functions ---
+import { getCompanies, addCompany } from "@/lib/api"; // <-- FIX: 'from'
 
-// --- 1. Import your API functions ---
-import { getCompanies, addCompany } from "@/lib/api"; // Assuming relative path is '@/lib/api'
-
-
-// --- Company Type (same as before) ---
+// --- Merged Company Type ---
 type Company = {
   id: string | number;
   name: string;
   location: string;
   founded_on: string;
-  rating: number;
+  rating?: number;
   logo_url: string;
-  // Add any other fields your API returns
+  website?: string;
+  reviews?: number;
   city: string;
-  created_at: string;
+  created_at?: string;
 };
 
+// --- Dummy Data ---
+const dummyCompanies: Company[] = [
+  {
+    id: "1",
+    name: "Graffersid Web and App Development",
+    location: "816, Shekhar Central, Manorama Ganj, AB road, New Palasia, Indore (M.P.)",
+    founded_on: "01-01-2016",
+    rating: 4.5,
+    reviews: 41,
+    logo_url: "",
+    website: "graffersid.com",
+    city: "Indore",
+  },
+  {
+    id: "2",
+    name: "Code Tech Company",
+    location: "414, Kanha Appartment, Bhawarkua, Indore (M.P.)",
+    founded_on: "01-01-2016",
+    rating: 4.5,
+    reviews: 0,
+    logo_url: "",
+    website: "codetech.com",
+    city: "Indore",
+  },
+  {
+    id: "3",
+    name: "Innogent Pvt. Ltd.",
+    location: "910, Shekhar Central, Manorama Ganj, AB road, New Palasia, Indore (M.P.)",
+    founded_on: "01-01-2016",
+    rating: 4.5,
+    reviews: 0,
+    logo_url: "",
+    website: "innogent.com",
+    city: "Indore",
+  },
+  {
+    id: "4",
+    name: "Pixel Web and App Development",
+    location: "410, Bansi Trade Center, Indore (M.P.)",
+    founded_on: "01-01-2016",
+    rating: 4.5,
+    reviews: 35,
+    logo_url: "",
+    website: "",
+    city: "Indore",
+  },
+];
+// --- END MODIFICATION ---
 
 export const Home = (): JSX.Element => {
-  // --- State for 'Add Company' form (Original) ---
+  // --- State for 'Add Company' form ---
   const [companyName, setCompanyName] = useState("");
   const [location, setLocation] = useState("");
   const [foundedOn, setFoundedOn] = useState("");
   const [city, setCity] = useState("");
 
+  // --- State for search, filtering, and sorting ---
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCity, setSelectedCity] = useState("Indore, Madhya Pradesh, India");
+  const [sortBy, setSortBy] = useState("name");
+  const [filteredCompanies, setFilteredCompanies] = useState<Company[]>([]);
 
-  // --- 2. Add state to control the 'Add Company' modal ---
+  // --- State for modal and submission ---
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false); // To disable button
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-
-  // --- State for company list (Original) ---
+  // --- State for company list ---
   const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null); // State for errors
+  const [error, setError] = useState<string | null>(null);
 
-
-  // --- 3. UPDATED 'handleSaveCompany' function ---
-  const handleSaveCompany = async () => {
-    // Basic validation
-    if (!companyName || !location || !city || !foundedOn) {
-      alert("Please fill out all fields.");
-      return;
-    }
-
-
-    setIsSubmitting(true);
+useEffect(() => {
+  const fetchCompanies = async () => {
     try {
-      const companyData = {
-        name: companyName,
-        location,
-        city,
-        founded_on: foundedOn,
-        // Add any other default fields your DB requires
-        description: "No description provided.",
-        logo_url: "https://placehold.co/95x95/6366f1/white?text=G"
-      };
-
-
-      // Call the API function
-      const newCompany = await addCompany(companyData);
-
-
-      // --- This is the REAL-TIME update ---
-      // Add the new company to the top of the existing list
-      setCompanies([newCompany, ...companies]);
-
-
-      // Clear the form and close the modal
-      setCompanyName("");
-      setLocation("");
-      setFoundedOn("");
-      setCity("");
-      setIsAddModalOpen(false); // Close the modal
+      setLoading(true);
+      setError(null);
+      const data = await getCompanies(); // ← Fetch from Supabase
+      const apiData = data || []; // Ensure data is an array, even if null/undefined
+      // ✅ Combine dummy data with the API data
+      setCompanies([...dummyCompanies, ...apiData]);
     } catch (err: any) {
-      setError("Failed to add company: " + err.message);
+      setError("Failed to fetch companies: " + err.message);
       console.error(err);
     } finally {
-      setIsSubmitting(false);
+      setLoading(false);
     }
   };
 
+  fetchCompanies();
+}, []);
 
-  // --- Fetch companies (Original, but now uses getCompanies) ---
-  useEffect(() => {
-    const fetchCompanies = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        // We'll use a null search term to get all companies
-        const data = await getCompanies(null);
-        setCompanies(data || []);
-      } catch (err: any) {
-        setError("Failed to fetch companies: " + err.message);
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
+const handleSaveCompany = async () => {
+  if (!companyName || !location || !city || !foundedOn) {
+    alert("Please fill out all fields.");
+    return;
+  }
+
+  setIsSubmitting(true);
+  try {
+    const companyData = {
+      name: companyName,
+      location,
+      city,
+      founded_on: foundedOn,
+      logo_url: `https://placehold.co/95x95/6366f1/white?text=${companyName.charAt(0)}`,
+      website: companyName.toLowerCase().replace(/\s+/g, "") + ".com",
+      reviews: 0,
     };
 
+    await addCompany(companyData);
+   // ✅ Re-fetch updated list
+    const updatedCompanies = await getCompanies();
+    const apiData = updatedCompanies || []; // Ensure it's an array
+    // ✅ Re-combine dummy data with the new API data
+    setCompanies([...dummyCompanies, ...apiData]);
 
-    fetchCompanies();
-  }, []); // Empty array means this runs once on load
+    // Reset form
+    setCompanyName("");
+    setLocation("");
+    setFoundedOn("");
+    setCity("");
+    setIsAddModalOpen(false);
+  } catch (err: any) {
+    setError("Failed to add company: " + err.message);
+    console.error(err);
+  } finally {
+    setIsSubmitting(false);
+  }
+};
 
+  // --- Handle search and filtering logic ---
+  const handleFilter = () => {
+    let filtered = companies;
+
+    // --- Filtering ---
+    if (selectedCity) {
+      // --- !! MAIN FIX !! ---
+      // This checks if the long string "Indore, Madhya Pradesh, India"
+      // includes the short string "Indore". This is CORRECT.
+      filtered = filtered.filter((company) =>
+        selectedCity.toLowerCase().includes(company.city.toLowerCase())
+      );
+      // --- !! END MAIN FIX !! ---
+    }
+    
+    if (searchQuery) {
+      filtered = filtered.filter((company) =>
+        company.name.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+
+    // --- Sorting ---
+    const sorted = [...filtered].sort((a, b) => {
+      switch (sortBy) {
+        case "rating":
+        case "average":
+          return (b.rating ?? 0) - (a.rating ?? 0);
+        case "location":
+          return a.location.localeCompare(b.location);
+        case "name":
+        default:
+          return a.name.localeCompare(b.name);
+      }
+    });
+
+    setFilteredCompanies(sorted);
+  };
+
+  // --- useEffect for real-time filtering and sorting ---
+  useEffect(() => {
+    handleFilter();
+  }, [searchQuery, selectedCity, companies, sortBy]);
 
   return (
-    <div className="bg-white w-full flex flex-col">
-      {/* --- Header (Original) --- */}
+    <div className="bg-white w-full flex flex-col min-h-screen">
+      
+      {/* --- Header --- */}
       <header className="w-full bg-white shadow-[0px_2px_25px_#0000001a] px-20 py-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <img className="w-10 h-10" alt="Frame" src="/frame-1.svg" />
@@ -143,7 +222,10 @@ export const Home = (): JSX.Element => {
         <div className="flex-1 max-w-96 mx-auto relative">
           <Input
             type="text"
-            placeholder="Search..."
+            placeholder="Search for a company..."
+            value={searchQuery}
+            // --- FIX: Added event type ---
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
             className="w-full h-[37px] bg-white rounded-[5px] border border-solid border-[#cdcdcd] pl-3 pr-10 [font-family:'Poppins',Helvetica] font-normal text-[#777777] text-[15px]"
           />
           <SearchIcon className="absolute right-3 top-1/2 -translate-y-1/2 w-[22px] h-[22px] text-gray-400" />
@@ -158,31 +240,39 @@ export const Home = (): JSX.Element => {
         </nav>
       </header>
 
-
+      {/* Main content area */}
       <main className="flex-1 px-20 py-10">
-        {/* --- Search/Filter/Dialog (Original) --- */}
+        
+        {/* --- Search/Filter/Dialog --- */}
         <div className="flex items-end gap-4 mb-6">
+          
+          {/* Select City */}
           <div className="flex-1 max-w-[413px]">
-            <label className="block [font-family:'Poppins',Helvetica] font-normal text-[#4a4a4a] text-sm tracking-[0] leading-[normal] mb-2">
+            <Label className="block [font-family:'Poppins',Helvetica] font-normal text-[#4a4a4a] text-sm tracking-[0] leading-[normal] mb-2">
               Select City
-            </label>
+            </Label>
             <div className="relative">
               <Input
                 type="text"
-                defaultValue="Indore, Madhya Pradesh, India"
+                placeholder="Enter city to filter..."
+                value={selectedCity}
+                // --- FIX: Added event type ---
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSelectedCity(e.target.value)}
                 className="w-full h-[37px] bg-white rounded-[5px] border border-solid border-[#cdcdcd] pl-3 pr-10 [font-family:'Poppins',Helvetica] font-normal text-black text-[15px]"
               />
-              <MapPinIcon className="absolute right-3 top-1/2 -translate-y-1/2 w-[22px] h-[22px] text-gray-600" />
+              <MapPinIcon className="absolute right-3 top-1/2 -translate-y-1/2 w-[22px] h-[22px] text-purple-600" />
             </div>
           </div>
 
-
-          <Button className="h-[37px] px-4 rounded-[5px] bg-[linear-gradient(137deg,rgba(209,0,243,1)_0%,rgba(0,43,197,1)_100%)] [font-family:'Poppins',Helvetica] font-semibold text-white text-base tracking-[0] leading-[normal] border-0">
+          {/* --- "Find Company" Button --- */}
+          <Button
+            onClick={handleFilter}
+            className="h-[37px] px-4 rounded-[5px] bg-[linear-gradient(137deg,rgba(209,0,243,1)_0%,rgba(0,43,197,1)_100%)] [font-family:'Poppins',Helvetica] font-semibold text-white text-base tracking-[0] leading-[normal] border-0"
+          >
             Find Company
           </Button>
 
-
-          {/* --- 4. Connect Dialog to state --- */}
+          {/* --- Add Company Dialog --- */}
           <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
             <DialogTrigger asChild>
               <Button className="h-[37px] px-2.5 rounded-[5px] bg-[linear-gradient(137deg,rgba(209,0,243,1)_0%,rgba(0,43,197,1)_100%)] [font-family:'Poppins',Helvetica] font-medium text-white text-[15px] tracking-[0] leading-[normal] border-0">
@@ -196,8 +286,12 @@ export const Home = (): JSX.Element => {
                 <DialogTitle className="text-2xl font-semibold text-center text-black">
                   Add Company
                 </DialogTitle>
+                <DialogDescription className="text-center text-sm text-gray-500">
+                  Fill in the form below to add a new company to the directory.
+                </DialogDescription>
               </DialogHeader>
               <div className="space-y-4 relative z-10">
+                {/* ... (Form inputs) ... */}
                 <div>
                   <Label className="block text-sm text-gray-600 mb-1">
                     Company name
@@ -205,7 +299,8 @@ export const Home = (): JSX.Element => {
                   <Input
                     placeholder="Enter..."
                     value={companyName}
-                    onChange={(e) => setCompanyName(e.target.value)}
+                    // --- FIX: Added event type ---
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCompanyName(e.target.value)}
                     className="w-full rounded-lg border border-gray-200 px-3 py-2 focus:ring-2 focus:ring-purple-400 focus:outline-none"
                   />
                 </div>
@@ -221,7 +316,8 @@ export const Home = (): JSX.Element => {
                     <Input
                       placeholder="Select Location"
                       value={location}
-                      onChange={(e) => setLocation(e.target.value)}
+                      // --- FIX: Corrected typo and added event type ---
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLocation(e.target.value)}
                       className="w-full rounded-lg border border-gray-200 pl-9 pr-3 py-2 focus:ring-2 focus:ring-purple-400 focus:outline-none"
                     />
                   </div>
@@ -247,9 +343,10 @@ export const Home = (): JSX.Element => {
                     </svg>
                     <Input
                       placeholder="DD/MM/YYYY or YYYY-MM-DD"
-                      type="date" // Use date type for better UX
+                      type="date"
                       value={foundedOn}
-                      onChange={(e) => setFoundedOn(e.target.value)}
+                      // --- FIX: Added event type ---
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFoundedOn(e.target.value)}
                       className="w-full rounded-lg border border-gray-200 pl-9 pr-3 py-2 focus:ring-2 focus:ring-purple-400 focus:outline-none"
                     />
                   </div>
@@ -261,7 +358,8 @@ export const Home = (): JSX.Element => {
                   <Input
                     placeholder="Enter city"
                     value={city}
-                    onChange={(e) => setCity(e.target.value)}
+                    // --- FIX: Added event type ---
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCity(e.target.value)}
                     className="w-full rounded-lg border border-gray-200 px-3 py-2 focus:ring-2 focus:ring-purple-400 focus:outline-none"
                   />
                 </div>
@@ -269,7 +367,7 @@ export const Home = (): JSX.Element => {
               <Button
                 type="submit"
                 onClick={handleSaveCompany}
-                disabled={isSubmitting} // Disable button while saving
+                disabled={isSubmitting}
                 className="w-full mt-6 rounded-lg bg-gradient-to-r from-purple-500 to-blue-600 text-white font-medium py-2 hover:opacity-90 transition-all"
               >
                 {isSubmitting ? "Saving..." : "Save"}
@@ -277,14 +375,19 @@ export const Home = (): JSX.Element => {
             </DialogContent>
           </Dialog>
 
-
-          {/* --- 'Sort' Select (Original) --- */}
+          {/* --- 'Sort' Select --- */}
           <div className="ml-auto">
-            <label className="block [font-family:'Poppins',Helvetica] font-normal text-[#4a4a4a] text-sm tracking-[0] leading-[normal] mb-2">
+            <Label className="block [font-family:'Poppins',Helvetica] font-normal text-[#4a4a4a] text-sm tracking-[0] leading-[normal] mb-2">
               Sort:
-            </label>
-            <Select defaultValue="name">
-              <SelectTrigger className="w-[154px] h-[37px] bg-white rounded-[5px] border border-solid border-[#cdcdcd] [font-family:'Poppins',Helvetica] font-medium text-black text-[15px]">
+            </Label>
+            <Select
+              defaultValue="name"
+              value={sortBy}
+              onValueChange={setSortBy}
+            >
+              <SelectTrigger 
+                className="w-[154px] h-[37px] bg-white rounded-[5px] border border-solid border-[#cdcdcd] [font-family:'Poppins',Helvetica] font-medium text-black text-[15px]"
+              >
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -292,31 +395,29 @@ export const Home = (): JSX.Element => {
                 <SelectItem value="average">Average</SelectItem>
                 <SelectItem value="rating">Rating</SelectItem>
                 <SelectItem value="location">Location</SelectItem>
-
               </SelectContent>
             </Select>
           </div>
         </div>
 
+        {/* --- Result Count --- */}
+        <p className="text-sm text-gray-600 my-6 font-[Poppins]">
+          Result Found: {filteredCompanies.length}
+        </p>
 
-        <div className="w-full h-px bg-gray-300 mb-6" />
-
-
-        {/* --- Other Sections (Original) --- */}
-        <ResultCountSection />
-        <HeaderSection />
-        <SearchAndFilterSection />
-
-
-        {/* --- Company List (Original, but now with error handling) --- */}
-        <div className="flex flex-col gap-6 mt-6">
+        {/* --- Company List --- */}
+        <div className="flex flex-col gap-6">
           {loading && <p>Loading companies...</p>}
           {error && <p className="text-red-600">{error}</p>}
-          {!loading && !error && companies.length === 0 && (
-            <p>No companies found. Be the first to add one!</p>
+          {!loading && !error && filteredCompanies.length === 0 && (
+            <p>
+              No companies found. Try adjusting your search or be the first to
+              add one!
+            </p>
           )}
-          {!loading && !error &&
-            companies.map((company) => (
+          {!loading &&
+            !error &&
+            filteredCompanies.map((company) => (
               <CompanyListSection key={company.id} company={company} />
             ))}
         </div>

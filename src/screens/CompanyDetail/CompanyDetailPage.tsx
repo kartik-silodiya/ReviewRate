@@ -5,12 +5,21 @@ import {
   getReviewsForCompany,
   getAverageRating,
   addReview, // We need this new API function
+  likeReview,
 } from '../../lib/api'; // Adjust path if needed
 
 
 // --- Import Icons ---
-import { MapPinIcon, StarIcon, PlusIcon, StarHalfIcon, UserCircleIcon, SearchIcon } from 'lucide-react';
-
+import {
+  MapPinIcon,
+  StarIcon,
+  PlusIcon,
+  StarHalfIcon,
+  UserCircleIcon,
+  SearchIcon,
+  ThumbsUpIcon, // <-- ADD THIS
+  Share2Icon,   // <-- ADD THIS
+} from 'lucide-react';
 
 // --- Import UI Components ---
 import { Button } from '@/components/ui/button';
@@ -34,6 +43,8 @@ type Company = {
   city: string;
   founded_on: string;
   description: string;
+  likes?: number;          // NEW
+  likedByUser?: boolean;
   // ... any other company fields
 };
 
@@ -45,6 +56,7 @@ type Review = {
   review_text: string;
   rating: number;
   created_at: string;
+  likes_count?: number; // <-- ADD THIS
 };
 
 
@@ -82,8 +94,8 @@ const StarRatingInput = ({ rating, setRating }: { rating: number, setRating: (ra
         <StarIcon
           key={star}
           className={`w-7 h-7 cursor-pointer ${star <= rating
-              ? 'text-yellow-400 fill-yellow-400'
-              : 'text-gray-300 hover:text-gray-400'
+            ? 'text-yellow-400 fill-yellow-400'
+            : 'text-gray-300 hover:text-gray-400'
             }`}
           onClick={() => setRating(star)}
           onMouseEnter={() => { /* can add hover effect here */ }}
@@ -114,6 +126,8 @@ export const CompanyDetailPage = () => {
   const [newReviewSubject, setNewReviewSubject] = useState("");
   const [newReviewText, setNewReviewText] = useState("");
   const [newReviewRating, setNewReviewRating] = useState(0);
+
+  const [likedReviews, setLikedReviews] = useState<Set<number>>(new Set());
 
 
   // --- Data Loading Effect ---
@@ -198,6 +212,68 @@ export const CompanyDetailPage = () => {
       setError("Failed to submit review: " + err.message);
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  // --- NEW: Function to Handle Liking a Review ---
+  const handleLikeReview = async (reviewId: number) => {
+    // Prevent double-liking in the same session
+    if (likedReviews.has(reviewId)) return;
+
+
+    // 1. Optimistic UI Update (update state immediately)
+    setLikedReviews(prev => new Set(prev).add(reviewId));
+    setReviews(prevReviews =>
+      prevReviews.map(r =>
+        r.id === reviewId ? { ...r, likes_count: (r.likes_count || 0) + 1 } : r
+      )
+    );
+
+
+    // 2. API Call (You need to create this API function)
+    try {
+      await likeReview(reviewId); // <-- See backend notes below
+      console.log(`API call to like review ${reviewId} would go here.`);
+    } catch (err) {
+      console.error("Failed to like review:", err);
+      // 3. Rollback on failure
+      setLikedReviews(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(reviewId);
+        return newSet;
+      });
+      setReviews(prevReviews =>
+        prevReviews.map(r =>
+          r.id === reviewId ? { ...r, likes_count: (r.likes_count || 0) - 1 } : r
+        )
+      );
+    }
+  };
+
+
+  // --- NEW: Function to Handle Sharing a Review ---
+  const handleShareReview = async (review: Review) => {
+    if (!company) return;
+
+
+    const shareData = {
+      title: `Review for ${company.name} by ${review.full_name}`,
+      text: `"${review.subject}: ${review.review_text}"`,
+      url: window.location.href, // Links to the current company page
+    };
+
+
+    // Use the Web Share API if available
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData);
+      } catch (err) {
+        console.error('Error sharing:', err);
+      }
+    } else {
+      // Fallback for desktop or unsupported browsers
+      navigator.clipboard.writeText(shareData.url);
+      alert("Share not supported on this browser. Link copied to clipboard!");
     }
   };
 
@@ -411,6 +487,30 @@ export const CompanyDetailPage = () => {
                       <p className="mt-1 text-gray-700">
                         {review.review_text}
                       </p>
+                      {/* --- NEW: ACTION BUTTONS --- */}
+                      <div className="flex items-center gap-4 mt-3">
+                        <button
+                          onClick={() => handleLikeReview(review.id)}
+                          disabled={likedReviews.has(review.id)}
+                          className="flex items-center gap-1.5 text-gray-500 hover:text-blue-600 disabled:text-blue-600 disabled:opacity-70 transition-colors"
+                        >
+                          <ThumbsUpIcon
+                            className={`w-4 h-4 ${likedReviews.has(review.id) ? 'fill-blue-600 text-blue-600' : ''
+                              }`}
+                          />
+                          <span className="text-sm font-medium">
+                            {review.likes_count || 0}
+                          </span>
+                        </button>
+                        <button
+                          onClick={() => handleShareReview(review)}
+                          className="flex items-center gap-1.5 text-gray-500 hover:text-gray-900 transition-colors"
+                          >
+                          <Share2Icon className="w-4 h-4" />
+                          <span className="text-sm font-medium">Share</span>
+                        </button>
+                      </div>
+                      {/* --- END: ACTION BUTTONS --- */}
                     </div>
                   </div>
                 ))
