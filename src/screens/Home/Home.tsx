@@ -10,10 +10,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+
 import { CompanyListSection } from "./sections/CompanyListSection";
 import { HeaderSection } from "./sections/HeaderSection";
 import { ResultCountSection } from "./sections/ResultCountSection";
 import { SearchAndFilterSection } from "./sections/SearchAndFilterSection";
+
 
 import {
   Dialog,
@@ -24,8 +26,10 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 
+
 // --- 1. Import your API functions ---
 import { getCompanies, addCompany } from "@/lib/api"; // Assuming relative path is '@/lib/api'
+
 
 // --- Company Type (same as before) ---
 type Company = {
@@ -40,6 +44,7 @@ type Company = {
   created_at: string;
 };
 
+
 export const Home = (): JSX.Element => {
   // --- State for 'Add Company' form (Original) ---
   const [companyName, setCompanyName] = useState("");
@@ -47,14 +52,17 @@ export const Home = (): JSX.Element => {
   const [foundedOn, setFoundedOn] = useState("");
   const [city, setCity] = useState("");
 
+
   // --- 2. Add state to control the 'Add Company' modal ---
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false); // To disable button
+
 
   // --- State for company list (Original) ---
   const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null); // State for errors
+
 
   // --- 3. UPDATED 'handleSaveCompany' function ---
   const handleSaveCompany = async () => {
@@ -64,6 +72,7 @@ export const Home = (): JSX.Element => {
       return;
     }
 
+
     setIsSubmitting(true);
     try {
       const companyData = {
@@ -72,16 +81,19 @@ export const Home = (): JSX.Element => {
         city,
         founded_on: foundedOn,
         // Add any other default fields your DB requires
-        description: "No description provided.", 
+        description: "No description provided.",
         logo_url: "https://placehold.co/95x95/6366f1/white?text=G"
       };
+
 
       // Call the API function
       const newCompany = await addCompany(companyData);
 
+
       // --- This is the REAL-TIME update ---
       // Add the new company to the top of the existing list
       setCompanies([newCompany, ...companies]);
+
 
       // Clear the form and close the modal
       setCompanyName("");
@@ -97,6 +109,7 @@ export const Home = (): JSX.Element => {
     }
   };
 
+
   // --- Fetch companies (Original, but now uses getCompanies) ---
   useEffect(() => {
     const fetchCompanies = async () => {
@@ -104,7 +117,7 @@ export const Home = (): JSX.Element => {
         setLoading(true);
         setError(null);
         // We'll use a null search term to get all companies
-        const data = await getCompanies(null); 
+        const data = await getCompanies(null);
         setCompanies(data || []);
       } catch (err: any) {
         setError("Failed to fetch companies: " + err.message);
@@ -114,8 +127,10 @@ export const Home = (): JSX.Element => {
       }
     };
 
+
     fetchCompanies();
   }, []); // Empty array means this runs once on load
+
 
   return (
     <div className="bg-white w-full flex flex-col">
@@ -123,6 +138,7 @@ export const Home = (): JSX.Element => {
       <header className="w-full bg-white shadow-[0px_2px_25px_#0000001a] px-20 py-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <img className="w-10 h-10" alt="Frame" src="/frame-1.svg" />
+          <span className="text-2xl font-bold">Review&RATE</span>
         </div>
         <div className="flex-1 max-w-96 mx-auto relative">
           <Input
@@ -142,6 +158,7 @@ export const Home = (): JSX.Element => {
         </nav>
       </header>
 
+
       <main className="flex-1 px-20 py-10">
         {/* --- Search/Filter/Dialog (Original) --- */}
         <div className="flex items-end gap-4 mb-6">
@@ -159,9 +176,11 @@ export const Home = (): JSX.Element => {
             </div>
           </div>
 
+
           <Button className="h-[37px] px-4 rounded-[5px] bg-[linear-gradient(137deg,rgba(209,0,243,1)_0%,rgba(0,43,197,1)_100%)] [font-family:'Poppins',Helvetica] font-semibold text-white text-base tracking-[0] leading-[normal] border-0">
             Find Company
           </Button>
+
 
           {/* --- 4. Connect Dialog to state --- */}
           <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
@@ -258,6 +277,7 @@ export const Home = (): JSX.Element => {
             </DialogContent>
           </Dialog>
 
+
           {/* --- 'Sort' Select (Original) --- */}
           <div className="ml-auto">
             <label className="block [font-family:'Poppins',Helvetica] font-normal text-[#4a4a4a] text-sm tracking-[0] leading-[normal] mb-2">
@@ -274,12 +294,15 @@ export const Home = (): JSX.Element => {
           </div>
         </div>
 
+
         <div className="w-full h-px bg-gray-300 mb-6" />
+
 
         {/* --- Other Sections (Original) --- */}
         <ResultCountSection />
         <HeaderSection />
         <SearchAndFilterSection />
+
 
         {/* --- Company List (Original, but now with error handling) --- */}
         <div className="flex flex-col gap-6 mt-6">

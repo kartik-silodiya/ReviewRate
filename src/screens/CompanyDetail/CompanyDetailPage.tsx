@@ -7,8 +7,10 @@ import {
   addReview, // We need this new API function
 } from '../../lib/api'; // Adjust path if needed
 
+
 // --- Import Icons ---
 import { MapPinIcon, StarIcon, PlusIcon, StarHalfIcon, UserCircleIcon, SearchIcon } from 'lucide-react';
+
 
 // --- Import UI Components ---
 import { Button } from '@/components/ui/button';
@@ -18,12 +20,11 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-  DialogFooter,
-  DialogClose,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+
 
 // --- Define Types ---
 type Company = {
@@ -36,6 +37,7 @@ type Company = {
   // ... any other company fields
 };
 
+
 type Review = {
   id: number;
   full_name: string;
@@ -45,11 +47,13 @@ type Review = {
   created_at: string;
 };
 
+
 // --- Helper Component for Star Rating Display ---
 const StarRatingDisplay = ({ rating, reviewCount }: { rating: number, reviewCount?: number }) => {
   const fullStars = Math.floor(rating);
   const hasHalfStar = rating % 1 >= 0.4; // Check for half star
   const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
+
 
   return (
     <div className="flex items-center gap-1">
@@ -69,6 +73,7 @@ const StarRatingDisplay = ({ rating, reviewCount }: { rating: number, reviewCoun
   );
 };
 
+
 // --- Helper Component for Star Rating Input ---
 const StarRatingInput = ({ rating, setRating }: { rating: number, setRating: (rating: number) => void }) => {
   return (
@@ -77,8 +82,8 @@ const StarRatingInput = ({ rating, setRating }: { rating: number, setRating: (ra
         <StarIcon
           key={star}
           className={`w-7 h-7 cursor-pointer ${star <= rating
-            ? 'text-yellow-400 fill-yellow-400'
-            : 'text-gray-300 hover:text-gray-400'
+              ? 'text-yellow-400 fill-yellow-400'
+              : 'text-gray-300 hover:text-gray-400'
             }`}
           onClick={() => setRating(star)}
           onMouseEnter={() => { /* can add hover effect here */ }}
@@ -93,12 +98,14 @@ const StarRatingInput = ({ rating, setRating }: { rating: number, setRating: (ra
 export const CompanyDetailPage = () => {
   const { id } = useParams<{ id: string }>();
 
+
   // --- State for Data ---
   const [company, setCompany] = useState<Company | null>(null);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [averageRating, setAverageRating] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
 
   // --- State for "Add Review" Modal ---
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -108,6 +115,7 @@ export const CompanyDetailPage = () => {
   const [newReviewText, setNewReviewText] = useState("");
   const [newReviewRating, setNewReviewRating] = useState(0);
 
+
   // --- Data Loading Effect ---
   useEffect(() => {
     if (!id) {
@@ -116,10 +124,12 @@ export const CompanyDetailPage = () => {
       return;
     }
 
+
     const loadCompanyData = async () => {
       try {
         setLoading(true);
         setError(null);
+
 
         const [companyData, reviewsData, avgRatingData] = await Promise.all([
           getCompanyById(id),
@@ -127,9 +137,11 @@ export const CompanyDetailPage = () => {
           getAverageRating(id),
         ]);
 
+
         setCompany(companyData);
         setReviews(reviewsData || []);
         setAverageRating(avgRatingData);
+
 
       } catch (err: any) {
         setError(err.message);
@@ -138,8 +150,10 @@ export const CompanyDetailPage = () => {
       }
     };
 
+
     loadCompanyData();
   }, [id]);
+
 
   // --- Function to Handle Review Submission ---
   const handleReviewSubmit = async () => {
@@ -147,6 +161,7 @@ export const CompanyDetailPage = () => {
       alert("Please fill out all fields and select a rating.");
       return;
     }
+
 
     setIsSubmitting(true);
     try {
@@ -157,8 +172,10 @@ export const CompanyDetailPage = () => {
         rating: newReviewRating,
       };
 
+
       // 1. Add the new review
       await addReview(reviewData, id);
+
 
       // 2. Refresh all data to show the new review and rating
       const [reviewsData, avgRatingData] = await Promise.all([
@@ -168,6 +185,7 @@ export const CompanyDetailPage = () => {
       setReviews(reviewsData || []);
       setAverageRating(avgRatingData);
 
+
       // 3. Reset form and close modal
       setIsModalOpen(false);
       setNewReviewName("");
@@ -175,12 +193,14 @@ export const CompanyDetailPage = () => {
       setNewReviewText("");
       setNewReviewRating(0);
 
+
     } catch (err: any) {
       setError("Failed to submit review: " + err.message);
     } finally {
       setIsSubmitting(false);
     }
   };
+
 
   // --- Render Logic ---
   if (loading) {
@@ -190,6 +210,7 @@ export const CompanyDetailPage = () => {
       </div>
     );
   }
+
 
   if (error) {
     return (
@@ -202,6 +223,7 @@ export const CompanyDetailPage = () => {
     );
   }
 
+
   if (!company) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-8">
@@ -213,12 +235,14 @@ export const CompanyDetailPage = () => {
     );
   }
 
+
   // --- Main Page Render ---
   return (
     <div className="bg-gray-50 min-h-screen p-4 md:p-8">
       <header className="w-full bg-white shadow-[0px_2px_25px_#0000001a] px-20 py-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <img className="w-10 h-10" alt="Frame" src="/frame-1.svg" />
+          <span className="text-2xl font-bold">Review&RATE</span>
         </div>
         <div className="flex-1 max-w-96 mx-auto relative">
           <Input
@@ -238,15 +262,18 @@ export const CompanyDetailPage = () => {
         </nav>
       </header>
 
+
       <div className="max-w-4xl mx-auto mb-4">
         <Link to="/" className="text-blue-600 hover:underline">
           &larr; Back to Home
         </Link>
       </div>
 
+
       {/* Main Content Card */}
       <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-lg overflow-hidden">
         <div className="p-6 md:p-8">
+
 
           {/* --- Company Header --- */}
           <div className="flex flex-col md:flex-row items-start gap-6">
@@ -278,6 +305,7 @@ export const CompanyDetailPage = () => {
                   />
                 </div>
 
+
                 {/* --- Add Review Button & Modal --- */}
                 <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
                   <DialogTrigger asChild>
@@ -286,73 +314,78 @@ export const CompanyDetailPage = () => {
                       Add Review
                     </Button>
                   </DialogTrigger>
-                  <DialogContent className="sm:max-w-[425px]">
+                  <DialogContent className="sm:max-w-md p-8 bg-white rounded-lg shadow-xl">
                     <DialogHeader>
-                      <DialogTitle className="text-2xl text-center">Add Review</DialogTitle>
+                      <DialogTitle className="text-2xl text-center font-bold">Add Review</DialogTitle>
                     </DialogHeader>
-                    <div className="grid gap-4 py-4">
-                      <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="name" className="text-right">
-                          Name
-                        </Label>
+
+
+                    <div className="mt-6 space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="name" className="text-sm font-medium">Full Name</Label>
                         <Input
                           id="name"
-                          placeholder="Your Name"
+                          placeholder="Enter"
                           value={newReviewName}
                           onChange={(e) => setNewReviewName(e.target.value)}
-                          className="col-span-3"
+                          className="w-full"
                         />
                       </div>
-                      <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="subject" className="text-right">
-                          Subject
-                        </Label>
+
+
+                      <div className="space-y-2">
+                        <Label htmlFor="subject" className="text-sm font-medium">Subject</Label>
                         <Input
                           id="subject"
-                          placeholder="Review Title"
+                          placeholder="Enter"
                           value={newReviewSubject}
                           onChange={(e) => setNewReviewSubject(e.target.value)}
-                          className="col-span-3"
+                          className="w-full"
                         />
                       </div>
-                      <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="review" className="text-right">
-                          Review
-                        </Label>
+
+
+                      <div className="space-y-2">
+                        <Label htmlFor="review" className="text-sm font-medium">Enter your Review</Label>
                         <Textarea
                           id="review"
-                          placeholder="Type your review here."
+                          placeholder="Description"
                           value={newReviewText}
                           onChange={(e) => setNewReviewText(e.target.value)}
-                          className="col-span-3"
+                          className="w-full"
                         />
                       </div>
-                      <div className="grid grid-cols-4 items-start gap-4">
-                        <Label className="text-right pt-1">
-                          Rating
-                        </Label>
-                        <div className="col-span-3">
+
+
+                      <div className="space-y-2">
+                        <h3 className="text-lg font-semibold">Rating</h3>
+                        <div className="flex items-center gap-4">
                           <StarRatingInput rating={newReviewRating} setRating={setNewReviewRating} />
+                          <span className="text-sm text-gray-500">Satisfied</span>
                         </div>
                       </div>
                     </div>
-                    <DialogFooter>
-                      <DialogClose asChild>
-                        <Button type="button" variant="outline" disabled={isSubmitting}>
-                          Cancel
-                        </Button>
-                      </DialogClose>
-                      <Button type="submit" onClick={handleReviewSubmit} disabled={isSubmitting}>
+
+
+                    <div className="mt-8 flex justify-center">
+                      <Button
+                        type="submit"
+                        onClick={handleReviewSubmit}
+                        disabled={isSubmitting}
+                        className="w-1/2 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg py-2 text-lg font-semibold"
+                      >
                         {isSubmitting ? "Saving..." : "Save"}
                       </Button>
-                    </DialogFooter>
+                    </div>
                   </DialogContent>
                 </Dialog>
                 {/* --- End Modal --- */}
 
+
               </div>
             </div>
           </div>
+
 
           {/* --- Review List --- */}
           <div className="mt-8 pt-6 border-t">
@@ -388,6 +421,7 @@ export const CompanyDetailPage = () => {
               )}
             </div>
           </div>
+
 
         </div>
       </div>
